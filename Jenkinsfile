@@ -2,9 +2,7 @@ pipeline {
     agent any
 
     tools {
-        jdk    'JDK-21'
-        maven  'Maven-3.9'
-        nodejs 'NodeJS-20'
+        jdk 'JDK-21'
     }
 
     environment {
@@ -24,16 +22,24 @@ pipeline {
         stage('Check Environment') {
             steps {
                 sh '''
-                    echo "===== Java ====="
+                    echo "======================================"
+                    echo "Java Version"
+                    echo "======================================"
                     java -version
 
-                    echo "===== Maven ====="
+                    echo "======================================"
+                    echo "Maven Version"
+                    echo "======================================"
                     mvn -version
 
-                    echo "===== Node ====="
+                    echo "======================================"
+                    echo "Node Version"
+                    echo "======================================"
                     node --version
 
-                    echo "===== NPM ====="
+                    echo "======================================"
+                    echo "NPM Version"
+                    echo "======================================"
                     npm --version
                 '''
             }
@@ -42,7 +48,11 @@ pipeline {
         stage('Backend - Clean') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh 'mvn clean'
+                    echo 'Cleaning Spring Boot backend...'
+
+                    sh '''
+                        mvn clean
+                    '''
                 }
             }
         }
@@ -50,7 +60,11 @@ pipeline {
         stage('Backend - Compile') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh 'mvn compile'
+                    echo 'Compiling Spring Boot backend...'
+
+                    sh '''
+                        mvn compile
+                    '''
                 }
             }
         }
@@ -58,13 +72,18 @@ pipeline {
         stage('Backend - Test') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh 'mvn test'
+                    echo 'Running backend tests...'
+
+                    sh '''
+                        mvn test
+                    '''
                 }
             }
+
             post {
                 always {
                     junit(
-                        testResults: "${BACKEND_DIR}/target/surefire-reports/*.xml",
+                        testResults: 'target/surefire-reports/*.xml',
                         allowEmptyResults: true
                     )
                 }
@@ -74,7 +93,11 @@ pipeline {
         stage('Backend - Package') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh 'mvn package -DskipTests'
+                    echo 'Packaging Spring Boot application...'
+
+                    sh '''
+                        mvn package -DskipTests
+                    '''
                 }
             }
         }
@@ -82,7 +105,11 @@ pipeline {
         stage('Frontend - Install') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    sh 'npm ci'
+                    echo 'Installing React dependencies...'
+
+                    sh '''
+                        npm ci
+                    '''
                 }
             }
         }
@@ -90,15 +117,24 @@ pipeline {
         stage('Frontend - Build') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    sh 'npm run build'
+                    echo 'Building React/Vite application...'
+
+                    sh '''
+                        npm run build
+                    '''
                 }
             }
         }
 
         stage('Archive Artifacts') {
             steps {
+                echo 'Archiving build artifacts...'
+
                 archiveArtifacts(
-                    artifacts: 'banking-app/target/*.jar, banking-ui/dist/**',
+                    artifacts: '''
+                        banking-app/target/*.jar,
+                        banking-ui/dist/**
+                    ''',
                     fingerprint: true,
                     allowEmptyArchive: false
                 )
@@ -107,16 +143,19 @@ pipeline {
     }
 
     post {
+
         success {
             echo '======================================'
             echo '       BUILD SUCCESSFUL'
             echo '======================================'
         }
+
         failure {
             echo '======================================'
             echo '          BUILD FAILED'
             echo '======================================'
         }
+
         always {
             cleanWs()
         }

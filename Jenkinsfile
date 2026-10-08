@@ -3,6 +3,8 @@ pipeline {
 
     tools {
         jdk 'JDK-21'
+        maven 'Maven-3.9'
+        nodejs 'NodeJS-20'
     }
 
     environment {
@@ -23,22 +25,22 @@ pipeline {
             steps {
                 sh '''
                     echo "======================================"
-                    echo "Java Version"
+                    echo "JAVA"
                     echo "======================================"
                     java -version
 
                     echo "======================================"
-                    echo "Maven Version"
+                    echo "MAVEN"
                     echo "======================================"
                     mvn -version
 
                     echo "======================================"
-                    echo "Node Version"
+                    echo "NODE"
                     echo "======================================"
                     node --version
 
                     echo "======================================"
-                    echo "NPM Version"
+                    echo "NPM"
                     echo "======================================"
                     npm --version
                 '''
@@ -48,11 +50,7 @@ pipeline {
         stage('Backend - Clean') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    echo 'Cleaning Spring Boot backend...'
-
-                    sh '''
-                        mvn clean
-                    '''
+                    sh 'mvn clean'
                 }
             }
         }
@@ -60,11 +58,7 @@ pipeline {
         stage('Backend - Compile') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    echo 'Compiling Spring Boot backend...'
-
-                    sh '''
-                        mvn compile
-                    '''
+                    sh 'mvn compile'
                 }
             }
         }
@@ -72,11 +66,7 @@ pipeline {
         stage('Backend - Test') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    echo 'Running backend tests...'
-
-                    sh '''
-                        mvn test
-                    '''
+                    sh 'mvn test'
                 }
             }
 
@@ -93,11 +83,7 @@ pipeline {
         stage('Backend - Package') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    echo 'Packaging Spring Boot application...'
-
-                    sh '''
-                        mvn package -DskipTests
-                    '''
+                    sh 'mvn package -DskipTests'
                 }
             }
         }
@@ -105,11 +91,7 @@ pipeline {
         stage('Frontend - Install') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    echo 'Installing React dependencies...'
-
-                    sh '''
-                        npm ci
-                    '''
+                    sh 'npm ci'
                 }
             }
         }
@@ -117,19 +99,13 @@ pipeline {
         stage('Frontend - Build') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    echo 'Building React/Vite application...'
-
-                    sh '''
-                        npm run build
-                    '''
+                    sh 'npm run build'
                 }
             }
         }
 
         stage('Archive Artifacts') {
             steps {
-                echo 'Archiving build artifacts...'
-
                 archiveArtifacts(
                     artifacts: '''
                         banking-app/target/*.jar,

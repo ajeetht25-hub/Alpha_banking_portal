@@ -3,8 +3,6 @@ pipeline {
 
     tools {
         jdk 'JDK-21'
-        maven 'Maven-3.9'
-        nodejs 'NodeJS-20'
     }
 
     environment {
@@ -24,24 +22,28 @@ pipeline {
         stage('Check Environment') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo "JAVA"
-                    echo "======================================"
+                    echo "===== JAVA ====="
                     java -version
 
-                    echo "======================================"
-                    echo "MAVEN"
-                    echo "======================================"
+                    echo "===== MAVEN ====="
+                    if ! command -v mvn >/dev/null 2>&1; then
+                        echo "ERROR: Maven is not installed."
+                        exit 1
+                    fi
                     mvn -version
 
-                    echo "======================================"
-                    echo "NODE"
-                    echo "======================================"
+                    echo "===== NODE ====="
+                    if ! command -v node >/dev/null 2>&1; then
+                        echo "ERROR: Node.js is not installed."
+                        exit 1
+                    fi
                     node --version
 
-                    echo "======================================"
-                    echo "NPM"
-                    echo "======================================"
+                    echo "===== NPM ====="
+                    if ! command -v npm >/dev/null 2>&1; then
+                        echo "ERROR: npm is not installed."
+                        exit 1
+                    fi
                     npm --version
                 '''
             }
@@ -50,6 +52,7 @@ pipeline {
         stage('Backend - Clean') {
             steps {
                 dir("${BACKEND_DIR}") {
+                    echo 'Cleaning backend...'
                     sh 'mvn clean'
                 }
             }
@@ -58,6 +61,7 @@ pipeline {
         stage('Backend - Compile') {
             steps {
                 dir("${BACKEND_DIR}") {
+                    echo 'Compiling backend...'
                     sh 'mvn compile'
                 }
             }
@@ -66,6 +70,7 @@ pipeline {
         stage('Backend - Test') {
             steps {
                 dir("${BACKEND_DIR}") {
+                    echo 'Running backend tests...'
                     sh 'mvn test'
                 }
             }
@@ -83,6 +88,7 @@ pipeline {
         stage('Backend - Package') {
             steps {
                 dir("${BACKEND_DIR}") {
+                    echo 'Packaging backend...'
                     sh 'mvn package -DskipTests'
                 }
             }
@@ -91,6 +97,7 @@ pipeline {
         stage('Frontend - Install') {
             steps {
                 dir("${FRONTEND_DIR}") {
+                    echo 'Installing frontend dependencies...'
                     sh 'npm ci'
                 }
             }
@@ -99,6 +106,7 @@ pipeline {
         stage('Frontend - Build') {
             steps {
                 dir("${FRONTEND_DIR}") {
+                    echo 'Building frontend...'
                     sh 'npm run build'
                 }
             }
@@ -106,11 +114,10 @@ pipeline {
 
         stage('Archive Artifacts') {
             steps {
+                echo 'Archiving artifacts...'
+
                 archiveArtifacts(
-                    artifacts: '''
-                        banking-app/target/*.jar,
-                        banking-ui/dist/**
-                    ''',
+                    artifacts: 'banking-app/target/*.jar, banking-ui/dist/**',
                     fingerprint: true,
                     allowEmptyArchive: false
                 )

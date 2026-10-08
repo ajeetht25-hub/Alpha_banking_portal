@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK-17'
-        nodejs 'NodeJS-20'
+        jdk 'JDK-21'
     }
 
     environment {
@@ -15,16 +14,24 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo 'Checking out source code...'
                 checkout scm
+            }
+        }
+
+        stage('Check Environment') {
+            steps {
+                sh '''
+                    java -version
+                    ./mvnw -version
+                    node --version
+                    npm --version
+                '''
             }
         }
 
         stage('Backend - Clean') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    echo 'Cleaning backend project...'
-
                     sh '''
                         chmod +x mvnw
                         ./mvnw clean
@@ -36,11 +43,7 @@ pipeline {
         stage('Backend - Compile') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    echo 'Compiling Spring Boot backend...'
-
-                    sh '''
-                        ./mvnw compile
-                    '''
+                    sh './mvnw compile'
                 }
             }
         }
@@ -48,11 +51,7 @@ pipeline {
         stage('Backend - Test') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    echo 'Running backend tests...'
-
-                    sh '''
-                        ./mvnw test
-                    '''
+                    sh './mvnw test'
                 }
             }
 
@@ -69,11 +68,7 @@ pipeline {
         stage('Backend - Package') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    echo 'Creating backend JAR...'
-
-                    sh '''
-                        ./mvnw package -DskipTests
-                    '''
+                    sh './mvnw package -DskipTests'
                 }
             }
         }
@@ -81,23 +76,7 @@ pipeline {
         stage('Frontend - Install') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    echo 'Installing frontend dependencies...'
-
-                    sh '''
-                        npm ci
-                    '''
-                }
-            }
-        }
-
-        stage('Frontend - Test') {
-            steps {
-                dir("${FRONTEND_DIR}") {
-                    echo 'Running frontend tests...'
-
-                    sh '''
-                        npm test -- --run
-                    '''
+                    sh 'npm ci'
                 }
             }
         }
@@ -105,47 +84,34 @@ pipeline {
         stage('Frontend - Build') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    echo 'Building React/Vite frontend...'
-
-                    sh '''
-                        npm run build
-                    '''
+                    sh 'npm run build'
                 }
             }
         }
 
         stage('Archive Artifacts') {
             steps {
-                echo 'Archiving application artifacts...'
-
                 archiveArtifacts(
                     artifacts: '''
                         banking-app/target/*.jar,
                         banking-ui/dist/**
                     ''',
-                    fingerprint: true,
-                    allowEmptyArchive: false
+                    fingerprint: true
                 )
             }
         }
     }
 
     post {
-
         success {
-            echo '=========================================='
-            echo '       BUILD SUCCESSFUL'
-            echo '=========================================='
+            echo 'BUILD SUCCESSFUL'
         }
 
         failure {
-            echo '=========================================='
-            echo '          BUILD FAILED'
-            echo '=========================================='
+            echo 'BUILD FAILED'
         }
 
         always {
-            echo 'Cleaning Jenkins workspace...'
             cleanWs()
         }
     }

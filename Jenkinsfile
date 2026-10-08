@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK-21'
+        jdk    'JDK-21'
+        maven  'Maven-3.9'
+        nodejs 'NodeJS-20'
     }
 
     environment {
@@ -40,9 +42,7 @@ pipeline {
         stage('Backend - Clean') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh '''
-                        mvn clean
-                    '''
+                    sh 'mvn clean'
                 }
             }
         }
@@ -50,9 +50,7 @@ pipeline {
         stage('Backend - Compile') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh '''
-                        mvn compile
-                    '''
+                    sh 'mvn compile'
                 }
             }
         }
@@ -60,16 +58,13 @@ pipeline {
         stage('Backend - Test') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh '''
-                        mvn test
-                    '''
+                    sh 'mvn test'
                 }
             }
-
             post {
                 always {
                     junit(
-                        testResults: 'target/surefire-reports/*.xml',
+                        testResults: "${BACKEND_DIR}/target/surefire-reports/*.xml",
                         allowEmptyResults: true
                     )
                 }
@@ -79,9 +74,7 @@ pipeline {
         stage('Backend - Package') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh '''
-                        mvn package -DskipTests
-                    '''
+                    sh 'mvn package -DskipTests'
                 }
             }
         }
@@ -89,9 +82,7 @@ pipeline {
         stage('Frontend - Install') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    sh '''
-                        npm ci
-                    '''
+                    sh 'npm ci'
                 }
             }
         }
@@ -99,9 +90,7 @@ pipeline {
         stage('Frontend - Build') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    sh '''
-                        npm run build
-                    '''
+                    sh 'npm run build'
                 }
             }
         }
@@ -109,10 +98,7 @@ pipeline {
         stage('Archive Artifacts') {
             steps {
                 archiveArtifacts(
-                    artifacts: '''
-                        banking-app/target/*.jar,
-                        banking-ui/dist/**
-                    ''',
+                    artifacts: 'banking-app/target/*.jar, banking-ui/dist/**',
                     fingerprint: true,
                     allowEmptyArchive: false
                 )
@@ -121,19 +107,16 @@ pipeline {
     }
 
     post {
-
         success {
             echo '======================================'
             echo '       BUILD SUCCESSFUL'
             echo '======================================'
         }
-
         failure {
             echo '======================================'
             echo '          BUILD FAILED'
             echo '======================================'
         }
-
         always {
             cleanWs()
         }

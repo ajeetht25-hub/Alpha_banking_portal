@@ -14,6 +14,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
+                echo 'Checking out source code...'
                 checkout scm
             }
         }
@@ -21,9 +22,16 @@ pipeline {
         stage('Check Environment') {
             steps {
                 sh '''
+                    echo "===== Java ====="
                     java -version
-                    ./mvnw -version
+
+                    echo "===== Maven ====="
+                    mvn -version
+
+                    echo "===== Node ====="
                     node --version
+
+                    echo "===== NPM ====="
                     npm --version
                 '''
             }
@@ -33,8 +41,7 @@ pipeline {
             steps {
                 dir("${BACKEND_DIR}") {
                     sh '''
-                        chmod +x mvnw
-                        ./mvnw clean
+                        mvn clean
                     '''
                 }
             }
@@ -43,7 +50,9 @@ pipeline {
         stage('Backend - Compile') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh './mvnw compile'
+                    sh '''
+                        mvn compile
+                    '''
                 }
             }
         }
@@ -51,7 +60,9 @@ pipeline {
         stage('Backend - Test') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh './mvnw test'
+                    sh '''
+                        mvn test
+                    '''
                 }
             }
 
@@ -68,7 +79,9 @@ pipeline {
         stage('Backend - Package') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh './mvnw package -DskipTests'
+                    sh '''
+                        mvn package -DskipTests
+                    '''
                 }
             }
         }
@@ -76,7 +89,9 @@ pipeline {
         stage('Frontend - Install') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    sh 'npm ci'
+                    sh '''
+                        npm ci
+                    '''
                 }
             }
         }
@@ -84,7 +99,9 @@ pipeline {
         stage('Frontend - Build') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    sh 'npm run build'
+                    sh '''
+                        npm run build
+                    '''
                 }
             }
         }
@@ -96,19 +113,25 @@ pipeline {
                         banking-app/target/*.jar,
                         banking-ui/dist/**
                     ''',
-                    fingerprint: true
+                    fingerprint: true,
+                    allowEmptyArchive: false
                 )
             }
         }
     }
 
     post {
+
         success {
-            echo 'BUILD SUCCESSFUL'
+            echo '======================================'
+            echo '       BUILD SUCCESSFUL'
+            echo '======================================'
         }
 
         failure {
-            echo 'BUILD FAILED'
+            echo '======================================'
+            echo '          BUILD FAILED'
+            echo '======================================'
         }
 
         always {
